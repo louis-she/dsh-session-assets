@@ -1,7 +1,7 @@
 {
   "name": "dsh-session-assets",
   "version": "0.1.0",
-  "description": "Per-session file assets for DSH Web: download presented files from chat cards, a session Files tab in the right sidebar, and asset storage inside the session directory (deleted together with the session).",
+  "description": "Session file assets for DeepSeek Harness (DSH) Web: chat-card & preview downloads, a Files view, and per-session asset archiving",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -24,5 +24,16 @@
       ]
     }
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/louis-she/dsh-session-assets.git"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "download",
+    "session-assets"
+  ]
 }
