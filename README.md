@@ -4,7 +4,7 @@
 
 给 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) Web 界面补上**会话文件资产**能力的插件：**对话卡片直接下载**、主内容区**「文件」标签页**、右侧栏**「会话文件」面板**、预览抽屉**下载入口**，生成的文件自动归档到 session 自己的目录里，**随 session 一起删除**。
 
-> 一个包同时提供宿主端（`lib/index.js`）与浏览器端（`lib/client.js`），零第三方依赖、无构建步骤，纯本地路径插件。
+> 一个包同时提供宿主端（`lib/index.js`）与浏览器端（`lib/client.js`），零第三方依赖、无构建步骤；既能从 npm 一键安装，也能本地路径运行（开发时改码即时热载）。
 
 ## 为什么需要它
 
@@ -21,12 +21,24 @@ DSH Web 原生的文件交互只有两样：**侧边栏预览**和**在宿主桌
 
 ## 安装
 
-```bash
-# 1. 把本仓库放到你的 DSH profile 里（纯本地路径，无需安装依赖）
-git clone <this-repo> ~/.dsh/profiles/web/plugins/session-assets
+### 方式一：插件管理器（推荐，发给别人就用这条）
 
-# 2. 在 ~/.dsh/profiles/web/cordis.patch.yml 末尾追加：
+包已发布到 npm：**`dsh-session-assets`**。两条路任选：
+
+- **UI**：设置 → 插件 → 「添加插件」→ 输入 `dsh-session-assets` → 安装
+- **CLI**：`dsh plugin --profile web add dsh-session-assets`
+
+安装器（本质是 `pnpm add`）把包放进 profile 的 `node_modules/`，并应用包自带的 `cordis.patch.yml`（就是下面那个 insert 条目），即装即生效；升级 = 先卸载再安装新版；卸载在插件页一键完成。
+
+> 本包是**组合包（bundle）**，package.json 声明了 `dsh.bundle.patch`——这正是「添加插件」UI 的硬性要求；同时保留了 `dsh.client` 双面声明，浏览器端 bundle 由 DSH 的模块系统运行时下发，无需构建。
+
+### 方式二：本地路径（开发用，改码即时热载）
+
+```bash
+git clone https://github.com/louis-she/dsh-session-assets ~/.dsh/profiles/web/plugins/session-assets
 ```
+
+然后在 `~/.dsh/profiles/web/cordis.patch.yml` 末尾追加：
 
 ```yaml
 - insert:
@@ -49,7 +61,10 @@ git clone <this-repo> ~/.dsh/profiles/web/plugins/session-assets
 
 ### 卸载
 
-删除上面的 `insert` 条目（浏览器再刷新一次即可），需要的话连包目录一起删；已归档资产留在各 session 目录内，不归插件管理。
+- 插件管理器安装的：插件页一键卸载，或 `dsh plugin --profile web remove dsh-session-assets`
+- 本地路径注册的：删除上面的 `insert` 条目（浏览器再刷新一次即可），需要的话连包目录一起删
+
+已归档资产留在各 session 目录内，归 session 所有，不随插件删除。
 
 ## 架构
 

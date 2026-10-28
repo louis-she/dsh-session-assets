@@ -4,7 +4,7 @@
 
 A [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) Web plugin that adds **per-session file assets**: **download buttons on chat cards**, a **「文件」 (Files) view** in the main conversation area, a **session files panel** in the right sidebar, **download actions in the file-preview drawer** — with every produced file archived inside the session's own directory so it **dies with the session**.
 
-> One package ships both halves — host (`lib/index.js`) and browser (`lib/client.js`) — with zero third-party dependencies, no build step, and a plain local-path install.
+> One package ships both halves — host (`lib/index.js`) and browser (`lib/client.js`) — with zero third-party dependencies and no build step. Installable from npm through DSH's plugin manager, or run straight from a local path while developing.
 
 ## What you get
 
@@ -19,12 +19,24 @@ Row badges distinguish provenance: **archived** (a copy in `assets/`), **not arc
 
 ## Install
 
-```bash
-# 1. Clone into your DSH profile (local path plugin, no dependencies to install)
-git clone <this-repo> ~/.dsh/profiles/web/plugins/session-assets
+### Option 1 — plugin manager (recommended; the way to hand it to others)
 
-# 2. Append to ~/.dsh/profiles/web/cordis.patch.yml:
+Published on npm as **`dsh-session-assets`**. Either route:
+
+- **UI**: Settings → Plugins → “Add plugin” → type `dsh-session-assets` → install
+- **CLI**: `dsh plugin --profile web add dsh-session-assets`
+
+The installer (a `pnpm add` underneath) places the package in the profile's `node_modules/` and applies the bundled `cordis.patch.yml` (the insert entry below) — active immediately. Upgrading = uninstall then install the new version; uninstalling is one click in the plugins page.
+
+> The package is a **bundle**: package.json declares `dsh.bundle.patch`, which is exactly what the “Add plugin” UI requires, while keeping the `dsh.client` dual-face declaration so the browser half ships through DSH's module system at runtime — still no build step.
+
+### Option 2 — local path (development; edits hot-reload instantly)
+
+```bash
+git clone https://github.com/louis-she/dsh-session-assets ~/.dsh/profiles/web/plugins/session-assets
 ```
+
+Then append to `~/.dsh/profiles/web/cordis.patch.yml`:
 
 ```yaml
 - insert:
@@ -48,7 +60,10 @@ Saving is enough: `dsh-hmr` watches the patch file, rebuilds the host fiber with
 
 ### Uninstall
 
-Remove the `insert` entry (then refresh the browser once), and delete the package directory if you like; archived assets stay in each session directory — they belong to the sessions, not the plugin.
+- Installed via the plugin manager: one click in the plugins page, or `dsh plugin --profile web remove dsh-session-assets`
+- Registered by local path: remove the `insert` entry (then refresh the browser once) and delete the package directory if you like
+
+Archived assets stay in each session directory — they belong to the sessions, not the plugin.
 
 ## Architecture
 

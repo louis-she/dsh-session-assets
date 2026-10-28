@@ -1,0 +1,10 @@
+# Bundle patch — applied only when this package is installed as a DSH bundle
+# (设置 → 插件 → 添加插件 → 输入 `dsh-session-assets`,
+#  or `dsh plugin --profile <name> add dsh-session-assets`).
+#
+# Note for developers: a local `file://` registration in the profile's own
+# cordis.patch.yml does NOT load this file; it exists for bundle installs.
+- insert:
+    - id: session-assets
+      name: dsh-session-assets
+      config: {}
