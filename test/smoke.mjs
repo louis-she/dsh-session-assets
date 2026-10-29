@@ -138,6 +138,21 @@ const ctx = {
 };
 
 const sessionQuery = {
+	/** The single full-log observation the list route must rely on. */
+	async readSession(id) {
+		if (id !== sessionId) {
+			throw Object.assign(new Error("no session"), { code: "SESSION_QUERY_SESSION_NOT_FOUND" });
+		}
+		return {
+			session: { cwd },
+			inheritedEventCount: 0,
+			events: [
+				{ seq: 11, type: "request/user", data: {} },
+				{ seq: 12, type: "deliverables/presented", data: presented },
+				...Object.entries(toolEvents).map(([seq, event]) => ({ seq: Number(seq), type: event.type, data: event.data }))
+			]
+		};
+	},
 	async listEvents(id) {
 		if (id !== sessionId) return [];
 		return [
@@ -170,7 +185,8 @@ const sessionQuery = {
 };
 ctx.sessionQuery = sessionQuery;
 
-apply(ctx, { sessionsRoot });
+// listCacheMs: 0 disables the payload cache so idempotency re-runs back-fill
+apply(ctx, { sessionsRoot, listCacheMs: 0 });
 ok("apply registers without throwing");
 
 assert.equal(routes.size, 4, `expected 4 routes, got ${[...routes.keys()].join(",")}`);
@@ -225,7 +241,8 @@ assert.ok(!payload.items.some((item) => item.kind === "produced" && item.name ==
 const newFileItem = payload.items.find((item) => item.name === "new-file.txt");
 assert.equal(newFileItem.available, true);
 assert.equal(newFileItem.bytes, 2);
-ok("list returns assets + presented + durable produced files (failures excluded, deduped)");
+assert.equal(readEventCalls.length, 0, "list must read the corpus once — no per-event readEvent");
+ok("list returns assets + presented + durable produced files (failures excluded, deduped, single observation)");
 
 // --- list again: back-fill must not duplicate ---
 const second = await (await listRoute.fetch(new Request(`http://localhost${listRoute.path}?sessionId=${encodeURIComponent(sessionId)}`))).json();
@@ -289,6 +306,18 @@ assert.equal(outside.status, 200, "read authority matches preview (outside-works
 const badFile = await fileRoute.fetch(new Request(`http://localhost${fileRoute.path}?${fileQuery}`));
 assert.equal(badFile.status, 400, "missing path is refused");
 ok("file route streams files (absolute + relative, preview read authority), refuses bad requests (400)");
+
+// --- list degrades to presented-only when the full-log read fails ---
+const originalReadSession = sessionQuery.readSession;
+sessionQuery.readSession = async () => {
+	throw Object.assign(new Error("replay validation failed"), { code: "SESSION_QUERY_CORPUS" });
+};
+const degraded = await (await listRoute.fetch(new Request(`http://localhost${listRoute.path}?sessionId=${encodeURIComponent(sessionId)}`))).json();
+assert.ok(degraded.items.some((item) => item.kind === "asset"), "fallback keeps assets");
+assert.ok(degraded.items.some((item) => item.kind === "presented"), "fallback keeps presented");
+assert.ok(!degraded.items.some((item) => item.kind === "produced"), "fallback skips produced (no quadratic reads)");
+sessionQuery.readSession = originalReadSession;
+ok("list degrades to presented-only when readSession fails (no quadratic fallback)");
 
 // --- self-instrumentation ---
 const state = JSON.parse(await readFile(join(dirnameOf(import.meta.url), "..", ".state.json"), "utf8"));

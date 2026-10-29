@@ -128,6 +128,7 @@ curl "http://127.0.0.1:3080/plugins/??dsh-session-assets/client.js&rev=<rev>"
 
 - **Assets live inside the session directory**, not a separate asset root: the persistence source explicitly reserves the session directory "for future session-local artifacts", DSH exposes no public session-deletion API (`session/disposed` also fires on process shutdown, so it cannot gate deletions), and file-system semantics then guarantee "delete the session ⇒ delete its assets".
 - **Downloads stream over HTTP routes + an anchor**, not `workspaceFiles.readBytes`: the latter caps files at 32 MB and buffers them in the browser.
+- **list 路由只做一次全量观察 + 10s 缓存**：`SessionCorpus.load` 本身无缓存，逐事件 `readEvent` 是二次方复杂度（曾在 1.7MB 会话上跑出 79.5 秒、拖垮整个 Web）；改为单次 `readSession` 后冷读 <1s，任意会话事件使缓存失效。
 - **"Written" files derive from the session log**, not the in-memory `workspace/changes` summary (lost on restart): the plugin mirrors deliverables' success criteria for `write`/`edit`/`str_replace_editor`, keeping the list durable and consistent with the official derivation.
 - **The Files view uses the fresh id `session-files`** (`chat`=0, `trajectory`=10, this plugin=20); reusing a native id would evict that native tab.
 

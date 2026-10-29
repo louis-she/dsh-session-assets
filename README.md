@@ -129,6 +129,7 @@ curl "http://127.0.0.1:3080/plugins/??dsh-session-assets/client.js&rev=<rev>"   
 
 - **资产放在 session 目录内**，而不是独立的资产根：`sessionDir` 源码注释明确写着它"留给 session 本地工件"，且 DSH 当前没有公开的 session 磁盘删除 API（`session/disposed` 在进程退出时同样触发，不可靠）——放在 session 目录里，"删 session 即删资产"由文件系统天然保证。
 - **下载走 HTTP 路由 + anchor**，而不是 `workspaceFiles.readBytes`：后者单文件 32MB 上限且需在浏览器内缓冲；流式路由无此限制。
+- **list 路由只做一次全量观察 + 10s 缓存**：`SessionCorpus.load` 本身无缓存，逐事件 `readEvent` 是二次方复杂度（曾在 1.7MB 会话上跑出 79.5 秒、拖垮整个 Web）；改为单次 `readSession` 后冷读 <1s，任意会话事件使缓存失效。
 - **「已生成」从日志推导**，而不是依赖 `workspace/changes` 内存摘要（重启即失）：复刻 deliverables 的 `write`/`edit`/`str_replace_editor` 成功判据，持久且与官方口径一致。
 - **主视图用全新 id `session-files`**（`chat`=0、`trajectory`=10、本插件=20），绝不复用原生 id（复用会顶替原生 tab）。
 
